@@ -25,11 +25,11 @@ export interface Option {
 }
 
 export interface CategoryData {
-  key:     CategoryKey
+  key:      CategoryKey
   question: string
-  emoji:   string
-  bgColor: string
-  options: Option[]
+  emoji:    string
+  bgColor:  string
+  options:  Option[]
 }
 
 // ─── 앱 상태 ──────────────────────────────────────────────────────
@@ -42,15 +42,30 @@ export interface Entry {
 
 export type ChildReaction = '❤️' | '😊' | '👍'
 
+// MVP2 추가
+export interface DayMood {
+  day:      string   // 월 화 수 …
+  emoji:    string
+  label:    string
+  hasEntry: boolean
+  isToday:  boolean
+}
+
 export interface AppState {
   entries:          Entry[]
   childReaction:    ChildReaction | null
   viewedByChild:    boolean
+  // MVP2
+  callRequested:    boolean
+  streakDays:       number
+  noEntryMode:      boolean
+  // actions
   addEntry:         (entry: Entry) => void
   clearEntries:     () => void
   setChildReaction: (r: ChildReaction) => void
   setViewedByChild: () => void
+  setCallRequested: (v: boolean) => void
+  setNoEntryMode:   (v: boolean) => void
 }
 
-// 각 화면 컴포넌트가 받는 props
 export type ScreenProps = { navigation: NavigationProp } & AppState
