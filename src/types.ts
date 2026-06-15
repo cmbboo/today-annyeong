@@ -68,4 +68,21 @@ export interface AppState {
   setNoEntryMode:   (v: boolean) => void
 }
 
-export type ScreenProps = { navigation: NavigationProp } & AppState
+export interface ScreenProps {
+  navigation: NavigationProp
+
+  entries: Entry[]
+  childReaction: ChildReaction | null
+  viewedByChild: boolean
+
+  callRequested: boolean
+  streakDays: number
+  noEntryMode: boolean
+
+  addEntry: (entry: Entry) => void
+  clearEntries: () => void
+  setChildReaction: (r: ChildReaction) => void
+  setViewedByChild: () => void
+  setCallRequested: (v: boolean) => void
+  setNoEntryMode: (v: boolean) => void
+}

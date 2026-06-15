@@ -24,23 +24,20 @@ export default function Page() {
   const goBack = () => setStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev)
 
   // ── 기본 상태 ──
-  const [entries,       setEntries]        = useState<Entry[]>([])
-  const [childReaction, setChildReactionS] = useState<ChildReaction | null>(null)
-  const [viewedByChild, setViewedByChildS] = useState(false)
+  const [entries,        setEntries]       = useState<Entry[]>([])
+  const [childReaction,  setChildReactionS] = useState<ChildReaction | null>(null)
+  const [viewedByChild,  setViewedByChildS] = useState(false)
 
   // ── MVP2 상태 ──
   const [callRequested, setCallRequestedS] = useState(false)
-  const [streakDays]                       = useState(3)
+  const [streakDays]                       = useState(3)   // Mock: 3일 고정
   const [noEntryMode,   setNoEntryModeS]   = useState(false)
 
   const addEntry = (entry: Entry) =>
     setEntries(prev => [...prev.filter(e => e.categoryKey !== entry.categoryKey), entry])
 
   const clearEntries = () => {
-    setEntries([])
-    setChildReactionS(null)
-    setViewedByChildS(false)
-    setCallRequestedS(false)
+    setEntries([]); setChildReactionS(null); setViewedByChildS(false); setCallRequestedS(false)
   }
 
   const screenProps: ScreenProps = {
