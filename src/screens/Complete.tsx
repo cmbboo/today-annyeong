@@ -15,29 +15,36 @@ export default function Complete({ navigation, entries, streakDays }: ScreenProp
 
   return (
     <div className="flex flex-col h-full safe-top bg-cream">
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-12 pb-36 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-12 pb-36
+                      flex flex-col items-center">
 
         {/* 완료 아이콘 */}
         <div className="w-20 h-20 rounded-full bg-brand-light border border-pos-border
                         flex items-center justify-center mb-5 text-4xl">
-          ❤️
+          🌷
         </div>
 
         {/* 메인 카피 */}
         <h2 className="text-2xl font-semibold text-ink text-center mb-2">
-          오늘 안녕이 전달되었어요
+          오늘 하루가 전달되었어요
         </h2>
-        <p className="text-base text-ink-sub text-center mb-1 leading-relaxed">
+        <p className="text-base text-ink-sub text-center leading-relaxed mb-1">
           가족이 확인하면 알려드릴게요.
         </p>
-        <p className="text-sm text-ink-hint mb-2">
-          전달 시간: {sentTime}
+        <p className="text-base text-ink-sub text-center mb-4">
+          오늘도 수고 많으셨어요.
         </p>
-        <p className="text-xs text-ink-hint mb-8">{getTodayString()}</p>
+
+        {/* 보조 정보 */}
+        <div className="flex items-center gap-3 mb-6">
+          <span className="text-sm text-ink-hint">전달 시간: {sentTime}</span>
+          <span className="text-ink-hint">·</span>
+          <span className="text-sm text-ink-hint">{getTodayString()}</span>
+        </div>
 
         {/* 안녕나무 스트릭 */}
         <div className="flex items-center gap-2 bg-brand-light border border-pos-border
-                        rounded-full px-5 py-2.5 mb-6">
+                        rounded-full px-5 py-2.5 mb-8">
           <span className="text-lg">{streak.emoji}</span>
           <span className="text-sm font-medium text-brand-text">{streak.text}</span>
         </div>
@@ -67,7 +74,7 @@ export default function Complete({ navigation, entries, streakDays }: ScreenProp
           <div className="w-full bg-alrt-bg border border-alrt-border rounded-2xl p-4 mb-4">
             <p className="text-sm text-alrt-text text-center leading-relaxed">
               몸이 많이 불편하신 것 같아요.<br />
-              가족에게 자세히 알리면 도움이 될 수 있어요.
+              가족이 확인 후 연락드릴 거예요.
             </p>
           </div>
         )}

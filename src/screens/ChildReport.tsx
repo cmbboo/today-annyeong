@@ -1,10 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { ScreenProps, ChildReaction } from '../types'
-import { mockEntries, weeklyMockData, generateSummary } from '../data'
-
-// 초대코드 (Mock)
-const INVITE_CODE = '3487'
+import { mockEntries, weeklyMockData, generateSummary, getAlertSummaries } from '../data'
 
 function getTodayString() {
   const d = new Date()
@@ -23,16 +20,20 @@ export default function ChildReport({
   callRequested, noEntryMode,
   setChildReaction, setViewedByChild, setNoEntryMode,
 }: ScreenProps) {
-  const [reacted, setReacted] = useState<ChildReaction | null>(childReaction)
+  const [reacted,        setReacted]        = useState<ChildReaction | null>(childReaction)
+  const [showCallMock,   setShowCallMock]   = useState(false)
 
-  // 미입력 모드일 때는 빈 배열, 아니면 실제 or mock
-  const displayEntries = noEntryMode
-    ? []
-    : entries.length > 0 ? entries : mockEntries
-  const isUsingMock = !noEntryMode && entries.length === 0
-  const hasAlert    = !noEntryMode && displayEntries.some(e => e.isAlert)
-  const summary     = generateSummary(displayEntries)
+  // 미입력 모드 제어
+  const displayEntries = noEntryMode ? [] : (entries.length > 0 ? entries : mockEntries)
+  const isUsingMock    = !noEntryMode && entries.length === 0
 
+  // 경고 상태 계산
+  const alertSummaries = getAlertSummaries(displayEntries)
+  const hasAlerts      = !noEntryMode && alertSummaries.length > 0
+
+  const summary = generateSummary(displayEntries)
+
+  // 화면 진입 시 열람 처리
   useEffect(() => { setViewedByChild() }, [])
 
   const handleReaction = (emoji: ChildReaction) => {
@@ -43,82 +44,102 @@ export default function ChildReport({
   return (
     <div className="flex flex-col h-full safe-top bg-cream">
 
-      {/* ─── 상단 바 ─── */}
+      {/* ── 상단 연결 상태 바 ── */}
       <div className="flex-shrink-0 flex items-center justify-between px-5 pt-4 pb-3
                       border-b border-border">
         <button onClick={() => navigation.goBack()}
           className="text-brand text-base font-medium w-14 py-1">
           ← 뒤로
         </button>
-        <span className="text-sm font-semibold text-ink">어머니의 오늘 하루</span>
-        {/* 연결 코드 */}
-        <div className="flex items-center gap-1 bg-cream-card border border-border
-                        rounded-full px-2.5 py-1">
-          <span className="text-[10px] text-ink-hint">코드</span>
-          <span className="text-xs font-bold text-brand tracking-wide">{INVITE_CODE}</span>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-ink">어머니의 오늘 하루</p>
+          <p className="text-xs text-ink-hint">어머니와 연결됨</p>
+        </div>
+        <div className="w-14 text-right">
+          <p className="text-xs text-ink-hint">{getTodayString().slice(5)}</p>
         </div>
       </div>
 
-      {/* ─── 스크롤 영역 ─── */}
+      {/* ── 스크롤 영역 ── */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-5 pt-4 pb-16">
 
-        <p className="text-center text-xs text-ink-hint mb-4">{getTodayString()}</p>
-
-        {/* ── 테스트 토글 (미입력 시뮬레이션) ── */}
+        {/* ── 테스트 토글 ── */}
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => setNoEntryMode(false)}
             className={`flex-1 py-2 text-sm rounded-xl font-medium transition-colors
-              ${!noEntryMode
-                ? 'bg-brand text-white'
-                : 'bg-cream-card border border-border text-ink-hint'}`}
+              ${!noEntryMode ? 'bg-brand text-white' : 'bg-cream-card border border-border text-ink-hint'}`}
           >
-            입력 있음
+            오늘 입력 있음
           </button>
           <button
             onClick={() => setNoEntryMode(true)}
             className={`flex-1 py-2 text-sm rounded-xl font-medium transition-colors
-              ${noEntryMode
-                ? 'bg-neg-bg border border-neg-border text-neg-text'
-                : 'bg-cream-card border border-border text-ink-hint'}`}
+              ${noEntryMode ? 'bg-neg-bg border border-neg-border text-neg-text' : 'bg-cream-card border border-border text-ink-hint'}`}
           >
             미입력 상태
           </button>
         </div>
 
-        {/* ── 미입력 상태 카드 ── */}
+        {/* ① 미입력 카드 */}
         {noEntryMode && (
           <div className="bg-neg-bg border border-neg-border rounded-2xl p-4 mb-4">
-            <p className="font-semibold text-neg-text text-base">
+            <p className="font-semibold text-neg-text text-base mb-1">
               오늘 아직 안녕이 전달되지 않았어요
             </p>
-            <p className="text-sm text-neg-text opacity-80 mt-1 leading-relaxed">
-              평소 입력 시간이 지났다면 한 번 연락해보세요.
+            <p className="text-sm text-neg-text opacity-80 leading-relaxed">
+              평소 입력 시간이 지났다면<br />한 번 연락해보세요.
             </p>
           </div>
         )}
 
-        {/* ── 통화 요청 카드 ── */}
+        {/* ② 통화 요청 카드 */}
         {callRequested && (
           <div className="bg-alrt-bg border border-alrt-border rounded-2xl p-4 mb-4">
-            <p className="font-semibold text-alrt-text text-base">📞 어머니가 연락을 원하세요</p>
-            <p className="text-sm text-alrt-text opacity-80 mt-1">
-              오늘은 먼저 연락드리면 좋겠습니다.
+            <p className="font-semibold text-alrt-text text-base mb-1">
+              📞 어머니가 연락을 원하세요
+            </p>
+            <p className="text-sm text-alrt-text opacity-80">
+              오늘은 먼저 전화해보면 좋겠습니다.
             </p>
           </div>
         )}
 
-        {/* ── 긴급 확인 카드 ── */}
-        {hasAlert && (
+        {/* ③ 확인 필요 카드 (AI 요약 위) */}
+        {hasAlerts && (
           <div className="bg-alrt-bg border border-alrt-border rounded-2xl p-4 mb-4">
-            <p className="font-semibold text-alrt-text text-base">🚨 확인이 필요한 내용이 있어요</p>
-            <p className="text-sm text-alrt-text opacity-80 mt-1">
-              어머니의 오늘 안녕에 주의해서 볼 내용이 있습니다.
+            <p className="font-semibold text-alrt-text text-base mb-2">
+              🚨 확인이 필요한 상태
             </p>
+            <p className="text-sm text-alrt-text opacity-80 mb-3">
+              어머니의 오늘 안녕에 주의해서 볼 내용이 있어요.
+            </p>
+            <ul className="space-y-1 mb-4">
+              {alertSummaries.map((msg, i) => (
+                <li key={i} className="text-sm text-alrt-text flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>{msg}</span>
+                </li>
+              ))}
+            </ul>
+            {!showCallMock ? (
+              <button
+                onClick={() => setShowCallMock(true)}
+                className="w-full py-3 bg-alrt-text text-white rounded-xl text-base
+                           font-semibold active:opacity-80 transition-opacity"
+              >
+                전화해보기
+              </button>
+            ) : (
+              <div className="w-full py-3 bg-cream-card border border-alrt-border rounded-xl
+                              text-center text-sm text-alrt-text">
+                전화 연결은 실제 구현 전입니다.
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── Mock 안내 ── */}
+        {/* Mock 안내 */}
         {isUsingMock && (
           <div className="bg-neg-bg border border-neg-border rounded-xl p-3 mb-4 text-center">
             <p className="text-xs text-neg-text leading-5">
@@ -127,7 +148,7 @@ export default function ChildReport({
           </div>
         )}
 
-        {/* ── AI 요약 (미입력이 아닐 때만) ── */}
+        {/* ④ AI 요약 */}
         {!noEntryMode && (
           <div className="bg-brand-light border border-pos-border rounded-2xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
@@ -138,27 +159,7 @@ export default function ChildReport({
           </div>
         )}
 
-        {/* ── 입력 항목 (미입력이 아닐 때만) ── */}
-        {!noEntryMode && displayEntries.length > 0 && (
-          <div className="bg-cream-card border border-border rounded-2xl p-4 mb-5">
-            <p className="text-xs text-ink-hint mb-3">전달한 내용</p>
-            {displayEntries.map((e, i) => (
-              <div
-                key={i}
-                className={`py-3 ${i < displayEntries.length - 1 ? 'border-b border-border/60' : ''}
-                  ${e.isAlert ? 'bg-alrt-bg rounded-xl px-3 mb-1' : ''}`}
-              >
-                <p className="text-xs text-ink-hint mb-0.5">{e.categoryQuestion}</p>
-                <p className={`text-base font-medium
-                  ${e.isAlert ? 'text-alrt-text' : 'text-ink'}`}>
-                  {e.path.join(' → ')}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── 이모지 반응 (미입력이 아닐 때만) ── */}
+        {/* ⑤ 이모지 반응 */}
         {!noEntryMode && (
           !reacted ? (
             <div className="text-center mb-5">
@@ -189,7 +190,7 @@ export default function ChildReport({
           )
         )}
 
-        {/* ── 최근 7일 요약 ── */}
+        {/* ⑥ 최근 7일 */}
         <div className="bg-cream-card border border-border rounded-2xl p-4 mb-4">
           <p className="text-xs text-ink-hint mb-3">최근 7일</p>
           <div className="grid grid-cols-7 gap-1">
@@ -201,7 +202,7 @@ export default function ChildReport({
                   ${!d.hasEntry ? 'opacity-40' : ''}`}
               >
                 <span className="text-[11px] text-ink-hint font-medium">{d.day}</span>
-                <span className={`${d.hasEntry ? 'text-xl' : 'text-base text-ink-hint'}`}>
+                <span className={d.hasEntry ? 'text-xl' : 'text-base text-ink-hint'}>
                   {d.emoji}
                 </span>
                 <span className="text-[9px] text-ink-hint text-center leading-3 break-keep">
@@ -211,6 +212,25 @@ export default function ChildReport({
             ))}
           </div>
         </div>
+
+        {/* ⑦ 상세 입력 내용 */}
+        {!noEntryMode && displayEntries.length > 0 && (
+          <div className="bg-cream-card border border-border rounded-2xl p-4 mb-4">
+            <p className="text-xs text-ink-hint mb-3">상세 내용</p>
+            {displayEntries.map((e, i) => (
+              <div
+                key={i}
+                className={`py-3 ${i < displayEntries.length - 1 ? 'border-b border-border/60' : ''}
+                  ${e.isAlert ? 'bg-alrt-bg rounded-xl px-3 mb-1' : ''}`}
+              >
+                <p className="text-xs text-ink-hint mb-0.5">{e.categoryQuestion}</p>
+                <p className={`text-base font-medium ${e.isAlert ? 'text-alrt-text' : 'text-ink'}`}>
+                  {e.path.join(' → ')}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="text-xs text-ink-hint text-center leading-5">
           자유로운 채팅 대신, 어머니의 하루를 기록하는 서비스예요.

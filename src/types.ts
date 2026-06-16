@@ -1,9 +1,17 @@
 // ─── 화면 ─────────────────────────────────────────────────────────
 export type ScreenName =
-  | 'ModeSelect' | 'ParentHome' | 'CategorySelect'
-  | 'DetailSelect' | 'Complete' | 'ChildReport'
+  | 'RoleSelect'      // 역할 선택 (신규)
+  | 'ChildInvite'     // 자녀 초대코드 화면 (신규)
+  | 'ParentJoin'      // 부모 코드 입력 화면 (신규)
+  | 'ParentHome'
+  | 'CategorySelect'
+  | 'DetailSelect'
+  | 'Complete'
+  | 'ChildReport'
 
 export type CategoryKey = 'meal' | 'health' | 'activity' | 'mood' | 'memory'
+
+export type UserRole = 'parent' | 'child' | null
 
 // ─── 네비게이션 ───────────────────────────────────────────────────
 export type RouteParams = { categoryKey?: CategoryKey }
@@ -42,9 +50,8 @@ export interface Entry {
 
 export type ChildReaction = '❤️' | '😊' | '👍'
 
-// MVP2 추가
 export interface DayMood {
-  day:      string   // 월 화 수 …
+  day:      string
   emoji:    string
   label:    string
   hasEntry: boolean
@@ -52,37 +59,25 @@ export interface DayMood {
 }
 
 export interface AppState {
+  // 기존
   entries:          Entry[]
   childReaction:    ChildReaction | null
   viewedByChild:    boolean
-  // MVP2
   callRequested:    boolean
   streakDays:       number
   noEntryMode:      boolean
-  // actions
+  // MVP3 신규
+  connected:        boolean
+  role:             UserRole
+  viewedTime:       string | null
+  // 액션
   addEntry:         (entry: Entry) => void
   clearEntries:     () => void
   setChildReaction: (r: ChildReaction) => void
   setViewedByChild: () => void
   setCallRequested: (v: boolean) => void
   setNoEntryMode:   (v: boolean) => void
+  setConnected:     (role: UserRole) => void
 }
 
-export interface ScreenProps {
-  navigation: NavigationProp
-
-  entries: Entry[]
-  childReaction: ChildReaction | null
-  viewedByChild: boolean
-
-  callRequested: boolean
-  streakDays: number
-  noEntryMode: boolean
-
-  addEntry: (entry: Entry) => void
-  clearEntries: () => void
-  setChildReaction: (r: ChildReaction) => void
-  setViewedByChild: () => void
-  setCallRequested: (v: boolean) => void
-  setNoEntryMode: (v: boolean) => void
-}
+export type ScreenProps = { navigation: NavigationProp } & AppState

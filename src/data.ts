@@ -1,5 +1,7 @@
 import { CategoryData, Entry, DayMood } from './types'
 
+export const INVITE_CODE = '3487'
+
 // ─── 선택 트리 ────────────────────────────────────────────────────
 export const categories: CategoryData[] = [
   {
@@ -70,23 +72,22 @@ export const categories: CategoryData[] = [
   {
     key: 'memory', question: '오늘 기억에 남는 일이 있었나요?', emoji: '✨', bgColor: '#F1EFE8',
     options: [
-      { id: 'me_1', label: '맛있는 걸 먹었어요',     tone: 'positive' },
-      { id: 'me_2', label: '좋은 걸 봤어요',          tone: 'positive' },
-      { id: 'me_3', label: '누군가 생각났어요',       tone: 'neutral'  },
-      { id: 'me_4', label: '그냥 평범한 하루였어요',  tone: 'neutral'  },
+      { id: 'me_1', label: '맛있는 걸 먹었어요',    tone: 'positive' },
+      { id: 'me_2', label: '좋은 걸 봤어요',         tone: 'positive' },
+      { id: 'me_3', label: '누군가 생각났어요',      tone: 'neutral'  },
+      { id: 'me_4', label: '그냥 평범한 하루였어요', tone: 'neutral'  },
     ],
   },
 ]
 
-// ─── Mock 데이터 ──────────────────────────────────────────────────
+// ─── Mock ─────────────────────────────────────────────────────────
 export const mockEntries: Entry[] = [
-  { categoryKey: 'meal',     categoryQuestion: '오늘 뭐 드셨어요?',         path: ['잘 먹었어요'],   isAlert: false },
-  { categoryKey: 'health',   categoryQuestion: '오늘 몸은 어떠셨어요?',      path: ['괜찮았어요'],    isAlert: false },
-  { categoryKey: 'activity', categoryQuestion: '오늘 어디 다녀오셨어요?',    path: ['산책했어요'],    isAlert: false },
-  { categoryKey: 'mood',     categoryQuestion: '오늘 기분은 어떠셨어요?',    path: ['좋았어요'],      isAlert: false },
+  { categoryKey: 'meal',     categoryQuestion: '오늘 뭐 드셨어요?',         path: ['잘 먹었어요'],  isAlert: false },
+  { categoryKey: 'health',   categoryQuestion: '오늘 몸은 어떠셨어요?',      path: ['괜찮았어요'],   isAlert: false },
+  { categoryKey: 'activity', categoryQuestion: '오늘 어디 다녀오셨어요?',    path: ['산책했어요'],   isAlert: false },
+  { categoryKey: 'mood',     categoryQuestion: '오늘 기분은 어떠셨어요?',    path: ['좋았어요'],     isAlert: false },
 ]
 
-// ─── 최근 7일 Mock ────────────────────────────────────────────────
 export const weeklyMockData: DayMood[] = [
   { day: '월', emoji: '😀', label: '좋았어요',       hasEntry: true,  isToday: false },
   { day: '화', emoji: '🙂', label: '괜찮았어요',     hasEntry: true,  isToday: false },
@@ -97,7 +98,7 @@ export const weeklyMockData: DayMood[] = [
   { day: '일', emoji: '○',  label: '아직 전달 전',   hasEntry: false, isToday: true  },
 ]
 
-// ─── 안녕나무 스트릭 메시지 ───────────────────────────────────────
+// ─── 안녕나무 스트릭 ──────────────────────────────────────────────
 export function getStreakMessage(days: number): { emoji: string; text: string } {
   if (days >= 30) return { emoji: '🌳', text: `${days}일째 안녕나무가 든든해졌어요` }
   if (days >= 7)  return { emoji: '🌿', text: `${days}일째 하루가 쌓이고 있어요` }
@@ -114,7 +115,30 @@ export function getTimeString(): string {
   return `${period} ${h12}:${m}`
 }
 
-// ─── AI 요약 (개선) ───────────────────────────────────────────────
+// ─── 경고 요약 메시지 (자녀 확인 카드용) ─────────────────────────
+export function getAlertSummaries(entries: Entry[]): string[] {
+  const msgs: string[] = []
+  for (const e of entries) {
+    if (!e.isAlert) continue
+    const m = e.path[0], s = e.path[1]
+    switch (e.categoryKey) {
+      case 'meal':
+        msgs.push(m === '못 먹었어요'
+          ? '오늘 식사를 하지 못했다고 기록하셨어요.'
+          : '오늘 식사를 조금 밖에 못 하셨다고 기록하셨어요.')
+        break
+      case 'health':
+        msgs.push(s ? `${s}고 기록하셨어요.` : '몸이 많이 불편하다고 기록하셨어요.')
+        break
+      case 'mood':
+        msgs.push(s ? `기분이 ${s}고 기록하셨어요.` : '기분이 많이 가라앉으셨다고 기록하셨어요.')
+        break
+    }
+  }
+  return msgs
+}
+
+// ─── AI 하루 요약 ────────────────────────────────────────────────
 export function generateSummary(entries: Entry[]): string {
   if (!entries.length)
     return '오늘 어머니는 식사도 잘 하시고 건강도 괜찮으셨어요. 산책도 다녀오셨고 기분도 좋으셨습니다. 평소처럼 무사한 하루를 보내신 것 같아요.'
@@ -127,20 +151,19 @@ export function generateSummary(entries: Entry[]): string {
   for (const e of entries) {
     const m = e.path[0], s = e.path[1]
     if (e.isAlert) { hasAlert = true; if (s) alertDetail = s }
-
     switch (e.categoryKey) {
       case 'meal':
-        if (m === '잘 먹었어요')      positive.push('식사를 잘 하셨고')
+        if (m === '잘 먹었어요')       positive.push('식사를 잘 하셨고')
         else if (m === '조금 먹었어요') concerns.push(`식사를 조금 하셨어요${s ? ` (${s})` : ''}`)
         else                            concerns.push(`식사를 잘 못 하셨어요${s ? ` — ${s}` : ''}`)
         break
       case 'health':
-        if (m === '괜찮았어요')         positive.push('몸 상태도 괜찮으셨고')
+        if (m === '괜찮았어요')          positive.push('몸 상태도 괜찮으셨고')
         else if (m === '조금 불편했어요') concerns.push(`몸이 조금 불편하셨어요${s ? ` (${s})` : ''}`)
         else                              concerns.push(`몸이 많이 불편하셨어요${s ? ` — 특히 ${s}` : ''}`)
         break
       case 'activity':
-        if (m === '집에 있었어요') positive.push('집에서 편히 쉬셨고')
+        if (m === '집에 있었어요')  positive.push('집에서 편히 쉬셨고')
         else if (m === '산책했어요') positive.push('산책도 다녀오셨고')
         else                         positive.push(`외출도 하셨어요${s ? ` (${s})` : ''}`)
         break
@@ -155,19 +178,14 @@ export function generateSummary(entries: Entry[]): string {
     }
   }
 
-  // 모두 긍정
   if (!concerns.length)
     return `오늘 어머니는 ${positive.join(', ')}. 전반적으로 평온하고 무사한 하루를 보내신 것 같아요.`
-
-  // 모두 걱정
   if (!positive.length) {
     const tail = hasAlert
       ? ` 특히 ${alertDetail || '불편한 부분'}이 있으시니 한 번 직접 확인해보시는 게 좋겠어요.`
       : ` 가볍게 안부를 여쭤보는 것도 좋을 것 같아요.`
     return `오늘 어머니는 ${concerns.join(', ')}.${tail}`
   }
-
-  // 혼합
   const tail = hasAlert
     ? ` 특히 ${alertDetail || '불편하신 부분'}이 있으시니 한 번 확인해보세요.`
     : ` 몸 상태는 한 번 확인해보면 좋겠어요.`

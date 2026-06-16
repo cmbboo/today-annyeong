@@ -1,8 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { ScreenName, RouteParams, Entry, ChildReaction, ScreenProps } from '@/src/types'
+import { ScreenName, RouteParams, Entry, ChildReaction, UserRole, ScreenProps } from '@/src/types'
+import { getTimeString } from '@/src/data'
 
-import ModeSelect     from '@/src/screens/ModeSelect'
+import RoleSelect     from '@/src/screens/RoleSelect'
+import ChildInvite    from '@/src/screens/ChildInvite'
+import ParentJoin     from '@/src/screens/ParentJoin'
 import ParentHome     from '@/src/screens/ParentHome'
 import CategorySelect from '@/src/screens/CategorySelect'
 import DetailSelect   from '@/src/screens/DetailSelect'
@@ -10,11 +13,13 @@ import Complete       from '@/src/screens/Complete'
 import ChildReport    from '@/src/screens/ChildReport'
 
 type Route = { name: ScreenName; params?: RouteParams }
-const RESET_SCREENS: ScreenName[] = ['ModeSelect', 'ParentHome', 'ChildReport']
+
+// 이 화면으로 navigate 시 스택 초기화
+const RESET_SCREENS: ScreenName[] = ['RoleSelect', 'ParentHome', 'ChildReport']
 
 export default function Page() {
   // ── 네비게이션 ──
-  const [stack, setStack] = useState<Route[]>([{ name: 'ModeSelect' }])
+  const [stack, setStack] = useState<Route[]>([{ name: 'RoleSelect' }])
   const current = stack[stack.length - 1]
 
   const navigate = (screen: ScreenName, params?: RouteParams) =>
@@ -24,20 +29,43 @@ export default function Page() {
   const goBack = () => setStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev)
 
   // ── 기본 상태 ──
-  const [entries,        setEntries]       = useState<Entry[]>([])
-  const [childReaction,  setChildReactionS] = useState<ChildReaction | null>(null)
-  const [viewedByChild,  setViewedByChildS] = useState(false)
+  const [entries,       setEntries]        = useState<Entry[]>([])
+  const [childReaction, setChildReactionS] = useState<ChildReaction | null>(null)
+  const [viewedByChild, setViewedByChildS] = useState(false)
 
   // ── MVP2 상태 ──
   const [callRequested, setCallRequestedS] = useState(false)
-  const [streakDays]                       = useState(3)   // Mock: 3일 고정
+  const [streakDays]                       = useState(3)
   const [noEntryMode,   setNoEntryModeS]   = useState(false)
 
+  // ── MVP3 상태 ──
+  const [connected,  setConnectedS]  = useState(false)
+  const [role,       setRoleS]       = useState<UserRole>(null)
+  const [viewedTime, setViewedTimeS] = useState<string | null>(null)
+
+  // ── 액션 ──
   const addEntry = (entry: Entry) =>
     setEntries(prev => [...prev.filter(e => e.categoryKey !== entry.categoryKey), entry])
 
   const clearEntries = () => {
-    setEntries([]); setChildReactionS(null); setViewedByChildS(false); setCallRequestedS(false)
+    setEntries([])
+    setChildReactionS(null)
+    setViewedByChildS(false)
+    setCallRequestedS(false)
+    setViewedTimeS(null)
+  }
+
+  const handleSetConnected = (r: UserRole) => {
+    setConnectedS(r !== null)
+    setRoleS(r)
+  }
+
+  // 자녀가 처음 열람 시 시간 기록
+  const handleSetViewedByChild = () => {
+    if (!viewedByChild) {
+      setViewedByChildS(true)
+      setViewedTimeS(getTimeString())
+    }
   }
 
   const screenProps: ScreenProps = {
@@ -45,26 +73,32 @@ export default function Page() {
     entries,
     childReaction,
     viewedByChild,
+    viewedTime,
     callRequested,
     streakDays,
     noEntryMode,
+    connected,
+    role,
     addEntry,
     clearEntries,
-    setChildReaction: (r) => { setChildReactionS(r); setViewedByChildS(true) },
-    setViewedByChild: ()  => setViewedByChildS(true),
+    setChildReaction: (r) => { setChildReactionS(r); if (!viewedByChild) handleSetViewedByChild() },
+    setViewedByChild: handleSetViewedByChild,
     setCallRequested: (v) => setCallRequestedS(v),
     setNoEntryMode:   (v) => setNoEntryModeS(v),
+    setConnected:     handleSetConnected,
   }
 
   const renderScreen = () => {
     switch (current.name) {
-      case 'ModeSelect':     return <ModeSelect     {...screenProps} />
+      case 'RoleSelect':     return <RoleSelect     {...screenProps} />
+      case 'ChildInvite':    return <ChildInvite    {...screenProps} />
+      case 'ParentJoin':     return <ParentJoin     {...screenProps} />
       case 'ParentHome':     return <ParentHome     {...screenProps} />
       case 'CategorySelect': return <CategorySelect {...screenProps} />
       case 'DetailSelect':   return <DetailSelect   {...screenProps} />
       case 'Complete':       return <Complete       {...screenProps} />
       case 'ChildReport':    return <ChildReport    {...screenProps} />
-      default:               return <ModeSelect     {...screenProps} />
+      default:               return <RoleSelect     {...screenProps} />
     }
   }
 
