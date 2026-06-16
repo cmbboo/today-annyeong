@@ -80,7 +80,7 @@ export const categories: CategoryData[] = [
   },
 ]
 
-// ─── Mock ─────────────────────────────────────────────────────────
+// ─── Mock 데이터 ──────────────────────────────────────────────────
 export const mockEntries: Entry[] = [
   { categoryKey: 'meal',     categoryQuestion: '오늘 뭐 드셨어요?',         path: ['잘 먹었어요'],  isAlert: false },
   { categoryKey: 'health',   categoryQuestion: '오늘 몸은 어떠셨어요?',      path: ['괜찮았어요'],   isAlert: false },
@@ -105,7 +105,7 @@ export function getStreakMessage(days: number): { emoji: string; text: string } 
   return            { emoji: '🌱', text: `${days}일째 안녕나무가 자라고 있어요` }
 }
 
-// ─── 전달 시간 ────────────────────────────────────────────────────
+// ─── 시간 문자열 ──────────────────────────────────────────────────
 export function getTimeString(): string {
   const d = new Date()
   const h = d.getHours()
@@ -115,27 +115,78 @@ export function getTimeString(): string {
   return `${period} ${h12}:${m}`
 }
 
-// ─── 경고 요약 메시지 (자녀 확인 카드용) ─────────────────────────
+// ─── 경고 요약 (MVP4 강화 — 더 넓은 조건 감지) ────────────────────
 export function getAlertSummaries(entries: Entry[]): string[] {
   const msgs: string[] = []
+  const seen = new Set<string>()          // 중복 방지
+
+  const add = (msg: string) => {
+    if (!seen.has(msg)) { seen.add(msg); msgs.push(msg) }
+  }
+
   for (const e of entries) {
-    if (!e.isAlert) continue
-    const m = e.path[0], s = e.path[1]
+    const [m, s] = e.path
+
     switch (e.categoryKey) {
       case 'meal':
-        msgs.push(m === '못 먹었어요'
-          ? '오늘 식사를 하지 못했다고 기록하셨어요.'
-          : '오늘 식사를 조금 밖에 못 하셨다고 기록하셨어요.')
+        if (m === '못 먹었어요')
+          add('오늘 식사를 충분히 하지 못했다고 기록하셨어요.')
+        else if (m === '조금 먹었어요')
+          add('오늘 식사를 조금 드셨다고 기록하셨어요.')
         break
+
       case 'health':
-        msgs.push(s ? `${s}고 기록하셨어요.` : '몸이 많이 불편하다고 기록하셨어요.')
+        if (m === '많이 불편했어요') {
+          if (s === '병원에 다녀왔어요')
+            add('몸이 많이 불편하셔서 병원에 다녀오셨다고 기록하셨어요.')
+          else
+            add(`몸이 많이 불편하다고 기록하셨어요.${s ? ` (${s})` : ''}`)
+        } else if (m === '조금 불편했어요') {
+          add(`몸이 조금 불편하다고 기록하셨어요.${s ? ` (${s})` : ''}`)
+        }
         break
+
+      case 'activity':
+        if (e.path.includes('병원 다녀왔어요'))
+          add('병원에 다녀오셨다고 기록하셨어요.')
+        break
+
       case 'mood':
-        msgs.push(s ? `기분이 ${s}고 기록하셨어요.` : '기분이 많이 가라앉으셨다고 기록하셨어요.')
+        if (m === '조금 가라앉았어요')
+          add(`기분이 조금 가라앉으셨다고 기록하셨어요.${s ? ` (${s})` : ''}`)
         break
     }
   }
   return msgs
+}
+
+// ─── 안녕 점수 (entries 기반 계산) ───────────────────────────────
+export function calculateScore(entries: Entry[]): number {
+  if (!entries.length) return 88    // 기본 Mock 점수
+
+  const alertCount = getAlertSummaries(entries).length
+  const severeCount = entries.filter(e => e.isAlert).length
+
+  let score = 100 - alertCount * 12 - severeCount * 8
+  return Math.max(45, Math.min(95, score))
+}
+
+export function getScoreLabel(score: number): string {
+  if (score >= 90) return '식사, 건강, 기분이 모두 안정적이에요.'
+  if (score >= 75) return '전반적으로 안정적이나 일부 확인이 필요해요.'
+  if (score >= 60) return '일부 불편하신 부분이 있어요. 한 번 연락해보세요.'
+  return '오늘은 특별히 확인이 필요한 상태예요.'
+}
+
+// ─── 최근 7일 요약 텍스트 ────────────────────────────────────────
+export function getWeeklySummaryText(data: DayMood[]): string {
+  const entryCount = data.filter(d => d.hasEntry).length
+  const hasBadDay  = data.some(d => d.emoji === '😔' && d.hasEntry)
+
+  if (hasBadDay)       return '기분이 낮았던 날이 있어 한 번 살펴보면 좋아요.'
+  if (entryCount >= 6) return '최근 일주일은 전반적으로 안정적이었어요.'
+  if (entryCount >= 4) return '꾸준히 안녕을 전하고 계세요.'
+  return '안녕을 전하면 가족이 더 안심할 수 있어요.'
 }
 
 // ─── AI 하루 요약 ────────────────────────────────────────────────
@@ -163,9 +214,9 @@ export function generateSummary(entries: Entry[]): string {
         else                              concerns.push(`몸이 많이 불편하셨어요${s ? ` — 특히 ${s}` : ''}`)
         break
       case 'activity':
-        if (m === '집에 있었어요')  positive.push('집에서 편히 쉬셨고')
+        if (m === '집에 있었어요')   positive.push('집에서 편히 쉬셨고')
         else if (m === '산책했어요') positive.push('산책도 다녀오셨고')
-        else                         positive.push(`외출도 하셨어요${s ? ` (${s})` : ''}`)
+        else                          positive.push(`외출도 하셨어요${s ? ` (${s})` : ''}`)
         break
       case 'mood':
         if (m === '좋았어요')        positive.push('기분도 좋으셨어요')

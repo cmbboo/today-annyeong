@@ -70,6 +70,7 @@ export interface AppState {
   connected:        boolean
   role:             UserRole
   viewedTime:       string | null
+  sentTime:         string | null
   // 액션
   addEntry:         (entry: Entry) => void
   clearEntries:     () => void

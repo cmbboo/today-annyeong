@@ -13,8 +13,6 @@ import Complete       from '@/src/screens/Complete'
 import ChildReport    from '@/src/screens/ChildReport'
 
 type Route = { name: ScreenName; params?: RouteParams }
-
-// 이 화면으로 navigate 시 스택 초기화
 const RESET_SCREENS: ScreenName[] = ['RoleSelect', 'ParentHome', 'ChildReport']
 
 export default function Page() {
@@ -22,10 +20,15 @@ export default function Page() {
   const [stack, setStack] = useState<Route[]>([{ name: 'RoleSelect' }])
   const current = stack[stack.length - 1]
 
-  const navigate = (screen: ScreenName, params?: RouteParams) =>
+  const navigate = (screen: ScreenName, params?: RouteParams) => {
+    // Complete 첫 도달 시 sentTime 기록
+    if (screen === 'Complete' && entries.length > 0 && !sentTime) {
+      setSentTimeS(getTimeString())
+    }
     setStack(RESET_SCREENS.includes(screen)
       ? [{ name: screen, params }]
       : prev => [...prev, { name: screen, params }])
+  }
   const goBack = () => setStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev)
 
   // ── 기본 상태 ──
@@ -39,9 +42,12 @@ export default function Page() {
   const [noEntryMode,   setNoEntryModeS]   = useState(false)
 
   // ── MVP3 상태 ──
-  const [connected,  setConnectedS]  = useState(false)
-  const [role,       setRoleS]       = useState<UserRole>(null)
-  const [viewedTime, setViewedTimeS] = useState<string | null>(null)
+  const [connected,   setConnectedS]  = useState(false)
+  const [role,        setRoleS]       = useState<UserRole>(null)
+  const [viewedTime,  setViewedTimeS] = useState<string | null>(null)
+
+  // ── MVP4 상태 ──
+  const [sentTime, setSentTimeS] = useState<string | null>(null)
 
   // ── 액션 ──
   const addEntry = (entry: Entry) =>
@@ -53,6 +59,7 @@ export default function Page() {
     setViewedByChildS(false)
     setCallRequestedS(false)
     setViewedTimeS(null)
+    setSentTimeS(null)
   }
 
   const handleSetConnected = (r: UserRole) => {
@@ -60,7 +67,6 @@ export default function Page() {
     setRoleS(r)
   }
 
-  // 자녀가 처음 열람 시 시간 기록
   const handleSetViewedByChild = () => {
     if (!viewedByChild) {
       setViewedByChildS(true)
@@ -74,6 +80,7 @@ export default function Page() {
     childReaction,
     viewedByChild,
     viewedTime,
+    sentTime,
     callRequested,
     streakDays,
     noEntryMode,

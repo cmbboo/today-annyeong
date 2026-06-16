@@ -1,6 +1,6 @@
 'use client'
 import { ScreenProps } from '../types'
-import { getStreakMessage, getTimeString } from '../data'
+import { getStreakMessage, calculateScore, getScoreLabel } from '../data'
 
 function getTodayString() {
   const d = new Date()
@@ -8,10 +8,14 @@ function getTodayString() {
   return `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`
 }
 
-export default function Complete({ navigation, entries, streakDays }: ScreenProps) {
+function scoreColor(score: number) {
+  return score >= 75 ? 'text-brand' : 'text-alrt-text'
+}
+
+export default function Complete({ navigation, entries, streakDays, sentTime }: ScreenProps) {
   const hasAlert = entries.some(e => e.isAlert)
   const streak   = getStreakMessage(streakDays)
-  const sentTime = getTimeString()
+  const score    = calculateScore(entries)
 
   return (
     <div className="flex flex-col h-full safe-top bg-cream">
@@ -31,20 +35,32 @@ export default function Complete({ navigation, entries, streakDays }: ScreenProp
         <p className="text-base text-ink-sub text-center leading-relaxed mb-1">
           가족이 확인하면 알려드릴게요.
         </p>
-        <p className="text-base text-ink-sub text-center mb-4">
+        <p className="text-base text-ink-sub text-center mb-3">
           오늘도 수고 많으셨어요.
         </p>
 
-        {/* 보조 정보 */}
-        <div className="flex items-center gap-3 mb-6">
-          <span className="text-sm text-ink-hint">전달 시간: {sentTime}</span>
-          <span className="text-ink-hint">·</span>
-          <span className="text-sm text-ink-hint">{getTodayString()}</span>
+        {/* 전달 시간 */}
+        <div className="flex items-center gap-2 mb-6 text-sm text-ink-hint">
+          {sentTime && <span>전달 시간: {sentTime}</span>}
+          {sentTime && <span>·</span>}
+          <span>{getTodayString()}</span>
+        </div>
+
+        {/* 안녕 점수 */}
+        <div className="w-full flex items-center gap-4 bg-cream-card border border-border
+                        rounded-2xl px-5 py-4 mb-4">
+          <p className={`text-4xl font-bold leading-none ${scoreColor(score)}`}>
+            {score}<span className="text-xl font-semibold">점</span>
+          </p>
+          <div className="flex-1">
+            <p className="text-xs text-ink-hint mb-0.5">오늘 안녕 점수</p>
+            <p className="text-sm text-ink-sub leading-snug">{getScoreLabel(score)}</p>
+          </div>
         </div>
 
         {/* 안녕나무 스트릭 */}
         <div className="flex items-center gap-2 bg-brand-light border border-pos-border
-                        rounded-full px-5 py-2.5 mb-8">
+                        rounded-full px-5 py-2.5 mb-6">
           <span className="text-lg">{streak.emoji}</span>
           <span className="text-sm font-medium text-brand-text">{streak.text}</span>
         </div>
